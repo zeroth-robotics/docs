@@ -1,6 +1,227 @@
-import { Callout } from 'nextra-theme-docs'
+import { Callout } from "nextra-theme-docs";
 
 <Callout type="warning" emoji="⚠️">
-This documentation is under construction and incomplete.
+  This documentation is under construction and incomplete.
 </Callout>
 
+# Reinforcement Learning (RL)
+
+## PPO
+
+We use the Proximal Policy Optimization (PPO) algorithm for training our humanoid robots.
+
+Proximal policy optimization (PPO) is an on-policy reinforcement-learning algorithm known for stability and sample-efficiency. It works by limiting how far the policy can stray from the current policy, aiding stability. A common issue with RL, especially on-policy RL—where the learning algorithm can only use current observations to inform policy updates—is that algorithms tend to be myopic, in that they aggressively optimize for the temporary environment of the current policy, to the detriment of stability. PPO improves upon previous policy-gradient methods by introducing a clipped surrogate objective, which limits the extent to which policies can deviate from previous policies.
+
+PPO is particularly suited for humanoid robotics. It is simple, stable, sample efficient, and uses continuous action spaces.
+
+Our PPO implementation follows this high-level algorithm:
+
+```
+While not done:
+    Collect experiences using current policy
+    If update interval reached:
+        Compute advantages and returns
+        For each epoch:
+            For each mini-batch:
+                Compute policy ratio r = new*policy / old_policy
+                Calculate L_clip = min(r * advantage, clip(r, 1-ε, 1+ε) _ advantage)
+                Compute value loss L_vf and entropy bonus
+                Loss = -L_clip + c1 _ L*vf - c2 * entropy
+                Perform gradient update
+        Clear experience buffer
+```
+
+Currently, our hyper parameters are:
+
+- Learning rate: 1e-5 (adaptive)
+- Entropy coefficient: 0.001
+- Discount factor (gamma): 0.994
+- GAE lambda: 0.9
+- Number of epochs: 2
+- Number of mini-batches: 4
+- Actor network: [512, 256, 128] hidden units
+- Critic network: [768, 256, 128] hidden units
+
+In our initial experiments, the PPO policy successfully learned basic locomotion behaviours. See `#Traning and Experiments` for details.
+
+### Standing Rewards
+
+The full standing reward function for our humanoid robot is a weighted sum of multiple components, each designed to encourage specific behaviours or penalize undesired ones. The total reward $R_{standing}$ is calculated as:
+
+$$
+\begin{align*}
+R_{standing} &= w_{\text{joint\_pos}} r_{\text{joint\_pos}} + w_{\text{feet\_distance}} r_{\text{feet\_distance}} + w_{\text{knee\_distance}} r_{\text{knee\_distance}} + w_{\text{foot\_slip}} r_{\text{foot\_slip}} \\
+  &+ w_{\text{feet\_air\_time}} r_{\text{feet\_air\_time}} + w_{\text{feet\_contact\_number}} r_{\text{feet\_contact\_number}} + w_{\text{orientation}} r_{\text{orientation}} \\
+  &+ w_{\text{feet\_contact\_forces}} r_{\text{feet\_contact\_forces}} + w_{\text{default\_joint\_pos}} r_{\text{default\_joint\_pos}} + w_{\text{base\_height}} r_{\text{base\_height}} \\
+  &+ w_{\text{base\_acc}} r_{\text{base\_acc}} + w_{\text{vel\_mismatch}} r_{\text{vel\_mismatch}} + w_{\text{torques}} r_{\text{torques}} \\
+  &+ w_{\text{dof\_vel}} r_{\text{dof\_vel}} + w_{\text{dof\_acc}} r_{\text{dof\_acc}} + w_{\text{collision}} r_{\text{collision}} \\
+  &+ w_{\text{action\_smoothness}} r_{\text{action\_smoothness}}
+\end{align*}
+$$
+
+where $w_i$ is the weight for each reward component $r_i$, defined in the configuration scales.
+
+<details>
+  <summary>Show Reward Component Equations</summary>
+
+1.  Joint Position Reward:
+
+    $$
+    r_\text{joint\_pos} = e^{-2\|\mathbf{q} - \mathbf{q}_\text{target}\|} - 0.2\|\mathbf{q} - \mathbf{q}_\text{target}\|_{[0, 0.5]}
+    $$
+
+2.  Feet Distance Reward:
+
+    $$
+    r_\text{feet\_distance} = \frac{1}{2}(e^{-100|d_{min}|} + e^{-100|d_{max}|})
+    $$
+
+3.  Knee Distance Reward: Similar to feet distance reward, but for knee joints.
+4.  Foot Slip Reward:
+
+    $$
+    r_\text{foot\_slip} = -\sum_{i \in \text{feet}} \sqrt{\|\mathbf{v}_i\|} \cdot \mathbb{1}_\text{contact}
+    $$
+
+5.  Feet Air Time Reward:
+
+    $$
+    r_\text{feet\_air\_time} = \sum_{i \in \text{feet}} \min(0.5, t_{\text{air},i}) \cdot \mathbb{1}_\text{first\_contact}
+    $$
+
+6.  Feet Contact Number Reward:
+
+    $$
+    r_\text{feet\_contact\_number} = \frac{1}{2}\sum_{i \in \text{feet}} \begin{cases} 1 & \text{if contact matches gait phase} \\ -0.3 & \text{otherwise} \end{cases}
+    $$
+
+7.  Orientation Reward:
+
+    $$
+    r_\text{orientation} = \frac{1}{2}(e^{-10\sum_{i=1}^2|\phi_i|} + e^{-20\|\mathbf{g}_\text{proj}\|})
+    $$
+
+    where $\phi_i$ are the base euler angles and $\mathbf{g}_\text{proj}$ is the projected gravity vector.
+
+8.  Feet Contact Forces Reward:
+
+    $$
+    r_\text{feet\_contact\_forces} = -\sum_{i \in \text{feet}} \max(0, \|\mathbf{f}_i\| - f_\text{max})_{[0, 400]}
+    $$
+
+9.  Default Joint Position Reward:
+
+    $$
+    r_\text{default\_joint\_pos} = e^{-100\|\mathbf{q}_\text{yaw,roll}\|} - 0.01\|\mathbf{q} - \mathbf{q}_\text{default}\|
+    $$
+
+10. Base Height Reward:
+
+    $$
+    r_\text{base\_height} = e^{-100|h - h_\text{target}|}
+    $$
+
+11. Base Acceleration Reward:
+
+    $$
+    r_\text{base\_acc} = e^{-3\|\mathbf{a}_\text{base}\|}
+    $$
+
+12. Velocity Mismatch Reward:
+
+    $$
+    r_\text{vel\_mismatch} = \frac{1}{2}(e^{-10v_z^2} + e^{-5\|\boldsymbol{\omega}_{xy}\|})
+    $$
+
+13. Velocity Tracking Reward:
+
+    $$
+        r_\text{track\_vel} = \frac{1}{2}(e^{-10\|\mathbf{v}_\text{cmd} - \mathbf{v}\|} + e^{-10|\omega_\text{cmd} - \omega|}) - 0.2(\|\mathbf{v}_\text{cmd} - \mathbf{v}\| + |\omega_\text{cmd} - \omega|) 
+    $$
+
+14. Feet Clearance Reward:
+
+    $$
+    r_\text{feet\_clearance} = \sum_{i \in \text{feet}} \mathbb{1}_{|h_i - h_\text{target}| < 0.02} \cdot (1 - \mathbb{1}_\text{stance})
+    $$
+
+15. Low Speed Reward:
+
+    $$
+    r_\text{low\_speed} = \begin{cases}
+    -2 & \text{if } \text{sign}(v) \neq \text{sign}(v_\text{cmd}) \\
+    -1 & \text{if } |v| < 0.5|v_\text{cmd}| \\
+    0 & \text{if } |v| > 1.2|v_\text{cmd}| \\
+    1.2 & \text{otherwise}
+    \end{cases}
+    $$
+
+16. Torque Penalty:
+
+    $$
+    r_\text{torques} = -\sum_i \tau_i^2
+    $$
+
+17. DOF Velocity Penalty:
+
+    $$
+    r_\text{dof\_vel} = -\sum_i \dot{q}_i^2
+    $$
+
+18. DOF Acceleration Penalty:
+
+    $$
+    r_\text{dof\_acc} = -\sum_i \ddot{q}_i^2
+    $$
+
+19. Collision Penalty:
+
+    $$
+    r_\text{collision} = -\sum_{i \in \text{bodies}} \mathbb{1}_{\|\mathbf{f}_i\| > 0.1}
+    $$
+
+20. Action Smoothness Penalty:
+
+    $$
+    r_\text{action\_smoothness} = -\|\mathbf{a}_t - \mathbf{a}_{t-1}\|^2 - \|\mathbf{a}_t + \mathbf{a}_{t-2} - 2\mathbf{a}_{t-1}\|^2 - 0.05\sum_i |a_{t,i}|
+    $$
+
+</details>
+
+### Walking Rewards
+
+For training the robot to walk, we have an additional set of rewards that are added to the standing rewards:
+
+$$
+R_\text{walking} = R_{standing} + w_{\text{feet\_clearance}} r_{\text{feet\_clearance}} + w_{\text{track\_vel}} r_{\text{track\_vel}} + w_{\text{low\_speed}} r_{\text{low\_speed}}
+$$
+
+where $w_i$ is the weight for each additional reward component $r_i$, also defined in the configuration scales.
+
+<details>
+  <summary>Show Walking Reward Component Equations</summary>
+
+1. Feet Clearance Reward:
+
+   $$
+   r_\text{feet\_clearance} = \sum_{i \in \text{feet}} \mathbb{1}_{|h_i - h_\text{target}| < 0.02} \cdot (1 - \mathbb{1}_\text{stance})
+   $$
+
+2. Velocity Tracking Reward:
+
+   $$
+       r_\text{track\_vel} = \frac{1}{2}(e^{-10\|\mathbf{v}_\text{cmd} - \mathbf{v}\|} + e^{-10|\omega_\text{cmd} - \omega|}) - 0.2(\|\mathbf{v}_\text{cmd} - \mathbf{v}\| + |\omega_\text{cmd} - \omega|)
+   $$
+
+3. Low Speed Reward:
+
+   $$
+   r_\text{low\_speed} = \begin{cases}
+   -2 & \text{if } \text{sign}(v) \neq \text{sign}(v_\text{cmd}) \\
+   -1 & \text{if } |v| < 0.5|v_\text{cmd}| \\
+   0 & \text{if } |v| > 1.2|v_\text{cmd}| \\
+   1.2 & \text{otherwise}
+   \end{cases}
+   $$
+
+</details>
