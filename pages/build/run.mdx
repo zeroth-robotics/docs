@@ -1,17 +1,24 @@
 import { Callout } from 'nextra/components'
+import { Steps } from 'nextra/components'
 
-<Callout type="warning" emoji="⚠️">
-This documentation is under construction and incomplete.
-</Callout>
-
-# Software Setup
-
-<Callout type="error" emoji="🚫">
-We've demonstrated policy deployment on the robot, however this is still under heavy development as we work on improving the robustness of the system.
-</Callout>
 <Callout type="error" emoji="🚫">
 Public Alpha. Zeroth-01 Bot is available for basic demos, please expect breaking changes until 1.0 is reached.
 </Callout>
+<Callout type="warning" emoji="⚠️">
+Documentation may be out of date or incomplete. Always see our [Discord](https://discord.gg/G6KP76uha5) for the most up-to-date information.
+</Callout>
+
+# Testing and First Run
+Once you've assembled your bot and installed the necessary software, a premade inference model exists that can be used as a demo for testing.
+
+<Callout type="warning" emoji="⚠️">
+We've demonstrated policy deployment on the robot, however this is still under heavy development as we continue to work on reliability of the system.
+</Callout>
+
+<Steps>
+### Conda
+First, set up your Python virtual environment that will allow you to interact using the [Python SDK](/sdk/python-library).
+
 Clone repository:
 ```bash
 git clone --recursive https://github.com/zeroth-robotics/zeroth-bot
@@ -26,23 +33,25 @@ conda create -n humanoid-os python=3.12
 conda activate humanoid-os
 ```
 
-## Inference
+### Inference
+Ping the Milk-V board to verify your connection is working. Finally, you're ready to test everything together using the demo inference model.
 
 Install dependencies:
 ```bash
 pip install -r experiments/requirements.txt
-
 ```
+
 Test if ping Milk-V is working:
 ```bash
 ping 192.168.42.1
 ```
 
 Run inference:
-
 ```bash
 python experiments/run.py
 ```
 
+If your robot is moving... 
 
-
+Congratulations! Your Zeroth-01 bot is now assembled, connected, and ready for development.
+</Steps>

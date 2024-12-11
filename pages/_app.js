@@ -1,5 +1,6 @@
 import { GoogleAnalytics } from 'nextjs-google-analytics';
 import Head from 'next/head';
+import '../style/global.css';
 
 function MyApp({ Component, pageProps }) {
   return (

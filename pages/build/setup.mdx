@@ -1,40 +1,38 @@
 import { Callout } from 'nextra/components'
 import { Steps } from 'nextra/components'
 
-<Callout type="warning" emoji="⚠️">
-This documentation is under construction and incomplete.
-</Callout>
 <Callout type="error" emoji="🚫">
 Public Alpha. Zeroth-01 Bot is available for basic demos, please expect breaking changes until 1.0 is reached.
 </Callout>
+<Callout type="warning" emoji="⚠️">
+Documentation may be out of date or incomplete. Always see our [Discord](https://discord.gg/G6KP76uha5) for the most up-to-date information.
+</Callout>
+
+# Software Setup
+Zeroth-01 bots are controlled by a simple-to-use [Python SDK](/sdk/python-library). Follow these instructions to install the OpenLCH humanoid robot platform on your SD card and connect with the Python SDK on your Zeroth-01 bot for the first time.
+
 # Image Installation and Setup
 
 <Steps>
+
 ### Flash the Image to SD Card
-Download the OpenLCH image from the [releases page](https://github.com/Zeroth-Robotics/OpenLCH-buildroot/releases).
+Use balenaEtcher (or the flashing tool of your choice) to flash the OpenLCH image onto your SD card.
 
-Use Balena Etcher (or any other flashing tool) to flash the image onto your SD card.
+([Download balenaEtcher](https://etcher.balena.io/#download-etcher) or
+[Install balenaEtcher via command line](https://etcher-docs.balena.io/))
 
-Once flashing is complete, remove and reinsert the SD card into your computer.
+1. Download the OpenLCH image from the [releases page](https://github.com/Zeroth-Robotics/OpenLCH-buildroot/releases?q=openlch).
 
-### Configure Wi-Fi on Startup
-Open the boot folder on the SD card (it should be visible on macOS since it is formatted as FAT32).
-Create a new file named wpa_supplicant.conf in the boot folder and add the following content:
+<img className="image-actionstep" src="/setup/image1.avif" alt="Finding and downloading the OpenLCH image" />
+<p className="image-caption">Double check you are downloading the OpenLCH image, and not a different resource.</p>
 
-```bash
-ctrl_interface=/var/run/wpa_supplicant
-ap_scan=1
-update_config=1
+2. Use the flashing tool to flash the image to your SD card.
+<img className="image-actionstep" src="/setup/image2.avif" alt="Flashing the image to an SD card" />
+3. Once flashing is complete, remove and reinsert the SD card into your computer.
 
-network={
-  ssid="YOURWIFINAME"
-  psk="YOURPASSWORD"
-  key_mgmt=WPA-PSK
-}
-```
-Replace YOURWIFINAME and YOURPASSWORD with your Wi-Fi credentials.
+### Option 1: Connect via USB
+The Zeroth-01 can be connected to over USB using ssh.
 
-### Connect via USB
 If you're connecting via USB, use the following details:
 
 - IP Address: 192.168.42.1
@@ -42,10 +40,18 @@ If you're connecting via USB, use the following details:
 - Password: milkv
 
 SSH:
-`ssh root@192.168.42.1`
+```bash
+ssh root@192.168.42.1
+```
 
 If there's a keygen issue:
-`ssh-keygen -R 192.168.42.1`
+```bash
+ssh-keygen -R 192.168.42.1
+```
+
+### Option 2: Connect via Wifi
+After connecting via USB for the first time, it's possible to set up [connection over wifi](/sdk/python-library#wi-fi-configuration).
+
+### Next Steps
+Now that you've connected to your Zeroth-01 bot for the first time, it's time for [testing and your first run](/build/run).
 </Steps>
-
-

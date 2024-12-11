@@ -1,0 +1,28 @@
+.details-internal {
+    margin-top: 0.5rem;
+}
+
+.flex {
+    display: flex;
+}
+
+.flex-row {
+    flex-direction: row;
+}
+
+.flex-item-half-width {
+    flex-basis: 50%;
+}
+
+.image-actionstep {
+    width: 90%;
+    max-width: 60rem;
+    margin-left: 1.5rem;
+}
+
+.image-caption {
+    font-size: 90%;
+    opacity: 60%;
+    margin-top: 0.5rem;
+    margin-left: 1.5rem;
+}

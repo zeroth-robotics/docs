@@ -1,13 +1,15 @@
 import { Callout } from 'nextra/components'
 
 <Callout type="warning" emoji="⚠️">
-This documentation is under construction and incomplete.
+Documentation may be out of date or incomplete. Always see our [Discord](https://discord.gg/G6KP76uha5) for the most up-to-date information.
 </Callout>
 
 # Python Library
 
 ## Overview
-OpenLCH platform provides a simple python SDK to interact with various functions of the robot - servo control, IMU data, audio/video streaming and more.
+The OpenLCH platform provides a simple, easy-to-use Python API to interact with various functions of the robot - servo control, IMU data, audio/video streaming and more.
+
+This means Zeroth-01 is universally accessible to anyone with Python capabilities.
 
 ## Installation
 
@@ -16,19 +18,26 @@ pip install openlch
 ```
 
 ## Usage
+To learn more about functions and parameters, refer to the [API reference](https://docs.zeroth.bot/python/openlch/hal.html).
 
-To connect to the robot, you can use either usb-c cable or wifi.
+To connect to Zeroth-01, you can either use a USB-C cable or set up a wifi connection. 
 
 ### Wi-Fi configuration
-Connect robot via usb-c and run the following command to set the wifi credentials.
+Connect your machine running OpenLCH to the robot with a USB-C cable and run the following command to set the wifi credentials.
 
 ```bash
 openlch set-wifi <ssid> <password>
 ```
 
-Restart the robot for the changes to take effect. After that, you can get the IP address of the robot by running `openlch get-ip`.
+Restart the robot for the changes to take effect. After that, you can get the IP address of the robot.
+
+```bash
+openlch get-ip
+```
 
 ### Code example
+
+Getting the position of and controlling servos, plus IMU data:
 ```python
 from openlch.hal import HAL
 
@@ -55,9 +64,9 @@ print(imu_data)
 ## {gyro: [x, y, z], accel: [x, y, z]}; units are deg/s and m/s^2 respectively
 ```
 
-To learn more about the functions and parameters, please refer to the [API reference](./api).
-
 ## Update SDK
+OpenLCH SDK can be updated using pip.
+
 ```bash
 pip install openlch -U
 ```
